@@ -28,6 +28,21 @@ class RegistrationForm(Form):
         if User.query.filter_by(email=field.data).first():
             raise ValidationError('Email already registraed.')
 
-    def validate_password(self, field):
+    def validate_username(self, field):
         if User.query.filter_by(username=field.data).first():
             raise ValidationError('Username already registraed.')
+
+class ChangePasswordForm(Form):
+    email = StringField('Email', validators=[Required(), Length(1,64),
+                                             Email()])
+    password = PasswordField('Old Password', validators=[Required()])
+    new_password = PasswordField('New Password', validators=[Required(), Length(6,32),
+                                                             EqualTo('password1', message="password must match.")])
+    password1 = PasswordField('Confirm Passwrod', validators=[Required()])
+    submit = SubmitField('Update Password')
+
+    def validate_email(self, field):
+        if not User.query.filter_by(email=field.data).first():
+            raise ValidationError('Enter correct email')
+
+
