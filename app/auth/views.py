@@ -6,7 +6,7 @@ from . import auth
 from .. import db
 from ..email import send_mail
 from ..models import User
-from .forms import LoginForm, RegistrationForm, ChangePasswordForm
+from .forms import LoginForm, RegistrationForm, ChangePasswordForm, PrintEmailForm, ResetPasswordForm
 
 @auth.before_app_request
 def before_request():
@@ -83,7 +83,39 @@ def change_password():
             flash('Invalid Password')
     return render_template('auth/change_password.html', form=form)
 
+@auth.route('/input_email', methods=['GET', 'POST'])
+@login_required
+def input_email():
+    form = PrintEmailForm()
+    if form.validate_on_submit():
+        if current_user.email == form.email.data:
+            token = current_user.generate_confirmation_token()
+            send_mail(current_user.email, "Reset Your Password",
+                      "auth/email/confirm", user=current_user, token=token)
+            flash('A new reset email already sent to you by email, please confirm the email and you will reset your password')
+        else:
+            flash('Invalid Password')
+    return render_template('auth/input_email.html', form=form)
 
+@auth.route('/input_email/<token>')
+@login_required
+def enter_reset_password(token):
+    if current_user.confirm(token):
+        return redirect(url_for('auth.reset_password'))
+
+@auth.route('/reset_password', methods=['GET', 'POST'])
+@login_required
+def reset_password():
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        if not current_user.verify_password(form.password.data):
+            current_user.password = form.password.data
+            db.session.add(current_user)
+            flash('Your password already changed.')
+            return render_template('main.index')
+        else:
+            flash('Your new password should be diffent the old password.')
+    return render_template('auth/reset_password.html', form=form)
 
 @auth.route('/logout')
 @login_required

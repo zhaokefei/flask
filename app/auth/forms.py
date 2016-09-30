@@ -45,4 +45,13 @@ class ChangePasswordForm(Form):
         if not User.query.filter_by(email=field.data).first():
             raise ValidationError('Enter correct email')
 
+class PrintEmailForm(Form):
+    email = StringField('Email', validators=[Required()])
+    submit = SubmitField('Confirm Emial')
+
+class ResetPasswordForm(Form):
+    password = PasswordField('Reset Password', validators=[Required(), Length(1, 64),
+                                                           Email()])
+    submit = SubmitField('Reset Password')
+
 
