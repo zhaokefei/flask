@@ -33,25 +33,28 @@ class RegistrationForm(Form):
             raise ValidationError('Username already registraed.')
 
 class ChangePasswordForm(Form):
-    email = StringField('Email', validators=[Required(), Length(1,64),
-                                             Email()])
-    password = PasswordField('Old Password', validators=[Required()])
+    old_password = PasswordField('Old Password', validators=[Required()])
     new_password = PasswordField('New Password', validators=[Required(), Length(6,32),
                                                              EqualTo('password1', message="password must match.")])
     password1 = PasswordField('Confirm Passwrod', validators=[Required()])
     submit = SubmitField('Update Password')
 
-    def validate_email(self, field):
-        if not User.query.filter_by(email=field.data).first():
-            raise ValidationError('Enter correct email')
 
-class PrintEmailForm(Form):
-    email = StringField('Email', validators=[Required()])
-    submit = SubmitField('Confirm Emial')
+class PasswordResetRequestForm(Form):
+    email = StringField('Email', validators=[Required(), Length(1,64),
+                                             Email()])
+    submit = SubmitField('Reset Password')
 
 class ResetPasswordForm(Form):
-    password = PasswordField('Reset Password', validators=[Required(), Length(1, 64),
-                                                           Email()])
+    email = StringField('Email', validators=[Required(), Length(1,64),
+                                             Email()])
+    password = PasswordField('New Password', validators=[Required(), Length(6, 64),
+                                                         EquaTo('password2', message='Passwords must match')])
+    password2 = PasswordField('Confirm password', validators=[Required()])
     submit = SubmitField('Reset Password')
+
+    def validate_email(self, field):
+        if User.query.filter_by(email=field.data).first() is None:
+            raise ValidationError("Unknown email address")
 
 
