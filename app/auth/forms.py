@@ -49,7 +49,7 @@ class ResetPasswordForm(Form):
     email = StringField('Email', validators=[Required(), Length(1,64),
                                              Email()])
     password = PasswordField('New Password', validators=[Required(), Length(6, 64),
-                                                         EquaTo('password2', message='Passwords must match')])
+                                                         EqualTo('password2', message='Passwords must match')])
     password2 = PasswordField('Confirm password', validators=[Required()])
     submit = SubmitField('Reset Password')
 
