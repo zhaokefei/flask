@@ -1,0 +1,11 @@
+Dear {{ user.username }}
+
+To change your email click on the following link:
+
+{{ url_for('auth.email_change', token=token, _external=True) }}
+
+If you have not requested a password reset simple ignore this message.
+
+Sincerely,
+
+Note: replies to this email address are not montiored.

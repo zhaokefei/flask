@@ -6,7 +6,8 @@ from . import auth
 from .. import db
 from ..email import send_mail
 from ..models import User
-from .forms import LoginForm, RegistrationForm, ChangePasswordForm, PasswordResetRequestForm, ResetPasswordForm
+from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
+                   PasswordResetRequestForm, ResetPasswordForm, EmailChangeRequestForm
 
 @auth.before_app_request
 def before_request():
@@ -122,4 +123,31 @@ def password_reset(token):
         else:
             return redirect(url_for('main.index'))
     return render_template('auth/reset_password.html', form=form)
+
+@auth.route('/change-email', methods=['GET', 'POST'])
+@login_required
+def email_change_request():
+    form = EmailChangeRequestForm()
+    if form.validate_on_submit():
+        if current_user.verify_password(password=form.password.data):
+            new_email = form.email.data
+            token = current_user.generate_change_email_token(new_email)
+            send_mail(new_email, 'Change Email',
+                      'auth/email/change_email', user=current_user,
+                      token=token)
+            flash('A change email message already sent to you by email.')
+            return redirect(url_for('main.index'))
+        else:
+            flash("Invalid email or password")
+    return render_template('auth/change_email.html', form=form)
+
+@auth.route('/change-email/<token>')
+@login_required
+def email_change(token):
+    if current_user.change_email(token):
+        flash('Your email has been change.')
+    else:
+        flash('Invalid Request.')
+    return redirect(url_for('main.index'))
+
 
