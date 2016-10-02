@@ -1,33 +1,14 @@
 # -*- coding:utf-8 -*-
 
-from flask import render_template, session, redirect, url_for, current_app, abort, flash
+from flask import render_template, redirect, url_for, abort, flash
 from flask_login import login_required, current_user
 
 from . import main
-from .forms import NameForm, EditProfileForm, EditProfileAdminForm
+from .forms import EditProfileForm, EditProfileAdminForm, PostForm
 from .. import db
-from ..email import send_mail
-from ..models import User, Role
+from ..models import User, Role, Permission, Post
 from ..decorators import admin_required
 
-@main.route('/', methods=['GET', 'POST'])
-def index():
-    form = NameForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        if user is None:
-            user = User(username=form.name.data)
-            db.session.add(user)
-            session['known'] = False
-            if current_app.config['FLASKY_ADMIN']:
-                send_mail(current_app.config['FLASKY_ADMIN'], 'New User',
-                          'mail/new_user', user=user)
-        else:
-            session['known'] = True
-        session['name'] = form.name.data
-        form.name.data = ''
-        return redirect(url_for('main.index'))
-    return render_template('index.html', form=form, name=session.get('name'), known=session.get('known'))
 
 @main.route('/user/<username>')
 def user(username):
@@ -77,7 +58,17 @@ def edit_profile_admin(id):
     form.about_me.data = user.about_me
     return render_template('edit_profile_admin.html', form=form, user=user)
 
-
+@main.route('/', methods=['GET', 'POST'])
+def index():
+    form = PostForm()
+    if current_user.can(Permission.WRITE_ARTICLES) and \
+            form.validate_on_submit():
+        post = Post(body=form.body.data,
+                    author=current_user._get_current_object())
+        db.session.add(post)
+        return redirect(url_for('main.index'))
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    return render_template('index.html', form=form, posts=posts)
 
 
 
