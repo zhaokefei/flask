@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as macros %}
 
 {% block title %}Flask - Profile{% endblock %}
 
@@ -42,4 +43,9 @@
 </div>
 <h3>Posts by {{ user.username }}</h3>
 {% include '_posts.html' %}
+{% if pagination %}
+<div class="pagination">
+  {{ marcos.pagination_widget(pagination, '.user', username=user.username) }}
+</div>
+{% endif %}
 {% endblock %}
