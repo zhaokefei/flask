@@ -4,6 +4,7 @@ from flask_wtf import Form
 from wtforms import StringField, TextAreaField, SelectField, SubmitField
 from wtforms import ValidationError
 from wtforms.validators import Required, Length, Email, Regexp
+from flask_pagedown.fields import PageDownField
 from ..models import Role, User
 
 class NameForm(Form):
@@ -48,5 +49,5 @@ class EditProfileAdminForm(Form):
             raise ValidationError("Username already registered.")
 
 class PostForm(Form):
-    body = TextAreaField("what's on your mind?", validators=[Required()])
+    body = PageDownField("what's on your mind?", validators=[Required()])
     submit = SubmitField('Submit')
