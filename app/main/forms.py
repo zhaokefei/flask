@@ -1,11 +1,13 @@
 # -*- coding:utf-8 -*-
 
 from flask_wtf import Form
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import StringField, TextAreaField, SelectField, SubmitField
 from wtforms import ValidationError
 from wtforms.validators import Required, Length, Email, Regexp
 from flask_pagedown.fields import PageDownField
 from ..models import Role, User
+from .. import Images
 
 class NameForm(Form):
     name = StringField('name', validators=[Required()])
@@ -50,4 +52,16 @@ class EditProfileAdminForm(Form):
 
 class PostForm(Form):
     body = PageDownField("what's on your mind?", validators=[Required()])
+    submit = SubmitField('Submit')
+
+
+class CommentForm(Form):
+    body = StringField('Enter your comment', validators=[Required()])
+    submit = SubmitField('Submit')
+
+
+class PhotoForm(Form):
+    photo = FileField('Upload Image', validators=[
+        FileRequired(),
+        FileAllowed(Images.images, 'Image Only')])
     submit = SubmitField('Submit')

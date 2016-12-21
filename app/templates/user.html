@@ -19,6 +19,11 @@
         {% endif %}
     </p>
     {% endif %}
+    {% if user == current_user %}
+    <a class="btn btn-default" href="{{ url_for('.upload_image') }}">
+        Upload Image
+    </a>
+    {% endif %}
     {% if current_user.is_administrator() %}
     <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
     {% endif %}
