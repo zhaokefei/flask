@@ -138,7 +138,6 @@ def upload_image():
     form = PhotoForm()
     if form.validate_on_submit():
         _file = request.files['photo']
-        print _file.filename, 'filename'
         if _file.filename == '':
             filename = ''
             flash('No selected file')
@@ -152,7 +151,6 @@ def upload_image():
         image = Photo(photo='/'.join(upload_folder + filename))
         db.session.add(image)
     return render_template('upload.html', form=form)
-
 
 
 @main.route('/follow/<username>')

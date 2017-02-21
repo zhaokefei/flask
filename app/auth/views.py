@@ -42,7 +42,7 @@ def logout():
     flash('You have been logged out.')
     return redirect(url_for('auth.login'))
 
-@auth.route('register', methods=['GET', 'POST'])
+@auth.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
