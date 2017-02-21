@@ -19,11 +19,6 @@
         {% endif %}
     </p>
     {% endif %}
-    {% if user == current_user %}
-    <a class="btn btn-default" href="{{ url_for('.upload_image') }}">
-        Upload Image
-    </a>
-    {% endif %}
     {% if current_user.is_administrator() %}
     <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
     {% endif %}
@@ -42,6 +37,11 @@
     <a class="btn btn-danger"
        href="{{ url_for('main.edit_profile_admin', id=user.id) }}">
         Edit Profile [Admin]
+    </a>
+    {% endif %}
+    {% if user == current_user %}
+    <a class="btn btn-default" href="{{ url_for('.upload_image') }}">
+        Upload Image
     </a>
     {% endif %}
     {% if current_user.can(Permission.FOLLOW) and user != current_user %}
