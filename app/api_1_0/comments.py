@@ -17,11 +17,11 @@ def get_post_comments(id):
         error_out=False)
     comments = pagination.items
     prev = None
-    if comments.has_prev:
-        prev = url_for('api.get_post_comments', page-1, _external=True)
+    if pagination.has_prev:
+        prev = url_for('api.get_post_comments', page=page-1, _external=True)
     next = None
-    if comments.has_next:
-        next = url_for('api.get_post_comments', page+1, _external=True)
+    if pagination.has_next:
+        next = url_for('api.get_post_comments', page=page+1, _external=True)
     return jsonify({
         'comments': [comment.to_json() for comment in comments],
         'prev': prev,
@@ -38,11 +38,11 @@ def get_comments():
         error_out=False)
     comments = pagination.items
     prev = None
-    if comments.has_prev:
-        prev = url_for('api.get_comments', page-1, _external=True)
+    if pagination.has_prev:
+        prev = url_for('api.get_comments', page=page-1, _external=True)
     next = None
-    if comments.has_next:
-        next = url_for('api.get_comments', page+1, _external=True)
+    if pagination.has_next:
+        next = url_for('api.get_comments', page=page+1, _external=True)
     return jsonify({
         'comments': [comment.to_json() for comment in comments],
         'prev': prev,

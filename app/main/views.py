@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
 
-from werkzeug import secure_filename
+# from werkzeug import secure_filename
 
 from flask import render_template, redirect, url_for, abort, flash, request, current_app, make_response
 from flask_login import login_required, current_user
 
 from . import main
-from .forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm, PhotoForm
-from .. import db, create_app
-from ..models import User, Role, Permission, Post, Comment, Photo
+from .forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
+from .. import db
+from ..models import User, Role, Permission, Post, Comment
 from ..decorators import admin_required, permission_required
 
 
@@ -132,25 +132,25 @@ def moderate_disable(id):
                             page=request.args.get('page', 1, type=int)))
 
 
-@main.route('/upload/', methods=['GET', 'POST'])
-@login_required
-def upload_image():
-    form = PhotoForm()
-    if form.validate_on_submit():
-        _file = request.files['photo']
-        if _file.filename == '':
-            filename = ''
-            flash('No selected file')
-        allowed_extensions = current_app.config['ALLOWED_EXTENSIONS']
-        upload_folder = current_app.config['UPLOAD_FOLDER']
-        file_appendix = _file.filename.rsplit('.', 1)[1]
-        if _file and '.' in _file.filename and file_appendix in allowed_extensions:
-            filename = secure_filename(_file.filename)
-            form.photo.data.save(upload_folder + filename)
-            flash('Image already upload')
-        image = Photo(photo='/'.join(upload_folder + filename))
-        db.session.add(image)
-    return render_template('upload.html', form=form)
+# @main.route('/upload/', methods=['GET', 'POST'])
+# @login_required
+# def upload_image():
+    # form = PhotoForm()
+    # if form.validate_on_submit():
+        # _file = request.files['photo']
+        # if _file.filename == '':
+            # filename = ''
+            # flash('No selected file')
+        # allowed_extensions = current_app.config['ALLOWED_EXTENSIONS']
+        # upload_folder = current_app.config['UPLOAD_FOLDER']
+        # file_appendix = _file.filename.rsplit('.', 1)[1]
+        # if _file and '.' in _file.filename and file_appendix in allowed_extensions:
+            # filename = secure_filename(_file.filename)
+            # form.photo.data.save(upload_folder + filename)
+            # flash('Image already upload')
+        # image = Photo(photo='/'.join(upload_folder + filename))
+        # db.session.add(image)
+    # return render_template('upload.html', form=form)
 
 
 @main.route('/follow/<username>')

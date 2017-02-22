@@ -6,7 +6,7 @@ from flask_mail import Mail
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_uploads import UploadSet, configure_uploads, IMAGES
+# from flask_uploads import UploadSet, configure_uploads, IMAGES
 from flask_pagedown import PageDown
 from config import config
 
@@ -19,16 +19,16 @@ login_manager.session_protection = 'strong'
 login_manager.login_view = 'auth.login'
 pagedown = PageDown()
 
-class Images(object):
-    images = UploadSet('images', IMAGES)
+# class Images(object):
+    # images = UploadSet('images', IMAGES)
 
 def create_app(config_name):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
-    app.config['UPLOADS_DEFAULT_DEST'] = '/home/kefei'
-    configure_uploads(app, Images.images)
+    # app.config['UPLOADS_DEFAULT_DEST'] = '/home/kefei'
+    # configure_uploads(app, Images.images)
 
     bootstrap.init_app(app)
     mail.init_app(app)

@@ -1,13 +1,13 @@
-#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
 from flask import jsonify, request, g, url_for, current_app
 
+from .. import db
+from ..models import Post, Permission
+
 from . import api
 from .decorators import permission_required
 from .errors import forbidden
-from .. import db
-from ..models import Post, Permission
 
 @api.route('/posts/')
 def get_posts():
@@ -18,10 +18,10 @@ def get_posts():
     posts = pagination.items
     prev = None
     if pagination.has_prev:
-        prev = url_for('api.get_posts', page-1, _external=True)
+        prev = url_for('api.get_posts', page=page-1, _external=True)
     next = None
     if pagination.has_next:
-        next = url_for('api.get_posts', page+1, _external=True)
+        next = url_for('api.get_posts', page=page+1, _external=True)
     return jsonify({
         'posts': [post.to_json() for post in posts],
         'prev': prev,

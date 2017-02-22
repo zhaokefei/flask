@@ -22,16 +22,16 @@ def get_user_posts(id):
     )
     posts = pagination.items
     prev = None
-    if posts.has_prev:
-        prev = url_for('api.get_user_posts', page-1, _external=True)
+    if pagination.has_prev:
+        prev = url_for('api.get_user_posts', page=page-1, _external=True)
     next = None
-    if posts.has_next:
-        next = url_for('api.get_user_posts', page+1, _external=True)
+    if pagination.has_next:
+        next = url_for('api.get_user_posts', page=page+1, _external=True)
     return jsonify({
         'posts': [post.to_json() for post in posts],
         'prev': prev,
         'next': next,
-        'count': pagination.items
+        'count': pagination.total
     })
 
 @api.route('/users/<int:id>/timeline/')
@@ -44,14 +44,14 @@ def get_user_followed_posts(id):
     )
     posts = pagination.items
     prev = None
-    if posts.has_prev:
-        prev = url_for('api.get_user_followed_posts', page-1, _external=True)
+    if pagination.has_prev:
+        prev = url_for('api.get_user_followed_posts', page=page-1, _external=True)
     next = None
-    if posts.has_next:
-        next = url_for('api.get_user_followed_posts', page+1, _external=True)
+    if pagination.has_next:
+        next = url_for('api.get_user_followed_posts', page=page+1, _external=True)
     return jsonify({
         'posts': [post.to_json() for post in posts],
         'prev': prev,
         'next': next,
-        'count': pagination.items
+        'count': pagination.total
     })

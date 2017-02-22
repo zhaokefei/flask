@@ -9,7 +9,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from markdown import markdown
 import bleach
 from . import db, login_manager
-from .api_1_0.authentication import ValidationError
+from app.exceptions import ValidationError
 
 
 class Role(db.Model):
@@ -367,11 +367,11 @@ class Comment(db.Model):
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
-class Photo(db.Model):
-    __tablename__ = 'photos'
+# class Photo(db.Model):
+    # __tablename__ = 'photos'
 
-    id = db.Column(db.Integer, primary_key=True)
-    photo = db.Column(db.LargeBinary)
+    # id = db.Column(db.Integer, primary_key=True)
+    # photo = db.Column(db.LargeBinary)
 
 
 class AnonymousUser(AnonymousUserMixin):

@@ -9,6 +9,9 @@ class Config:
     FLASKY_MAIL_SENDER = 'Flasky Admin <18292878089@163.com>'
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
     FLASKY_POSTS_PER_PAGE = 20
+    FLASKY_FOLLOWERS_PER_PAGE = 50
+    FLASKY_COMMENTS_PER_PAGE = 30
+    FLASKY_SLOW_DB_QUERY_TIME=0.5
     FLASKY_COMMENTS_PER_PAGE = 10
 
     UPLOAD_FOLDER = os.path.join(basedir, 'app/static/')
