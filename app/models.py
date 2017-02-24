@@ -367,12 +367,6 @@ class Comment(db.Model):
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
-# class Photo(db.Model):
-    # __tablename__ = 'photos'
-
-    # id = db.Column(db.Integer, primary_key=True)
-    # photo = db.Column(db.LargeBinary)
-
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):

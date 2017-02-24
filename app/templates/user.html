@@ -39,11 +39,6 @@
         Edit Profile [Admin]
     </a>
     {% endif %}
-    {% if user == current_user %}
-    <a class="btn btn-default" href="{{ url_for('.upload_image') }}">
-        Upload Image
-    </a>
-    {% endif %}
     {% if current_user.can(Permission.FOLLOW) and user != current_user %}
         {% if not current_user.is_following(user) %}
         <a href="{{ url_for('.follow', username=user.username) }}"
