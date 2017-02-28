@@ -6,7 +6,7 @@ from flask_mail import Mail
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-# from flask_uploads import UploadSet, configure_uploads, IMAGES
+from flask_oauthlib.provider import OAuth2Provider
 from flask_pagedown import PageDown
 from config import config
 
@@ -18,6 +18,7 @@ login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'auth.login'
 pagedown = PageDown()
+oauth = OAuth2Provider()
 
 # class Images(object):
     # images = UploadSet('images', IMAGES)
@@ -36,6 +37,12 @@ def create_app(config_name):
     db.init_app(app)
     login_manager.init_app(app)
     pagedown.init_app(app)
+    oauth.init_app(app)
+
+    if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
+        from flask_sslify import SSLify
+        sslify = SSLify(app)
+
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)

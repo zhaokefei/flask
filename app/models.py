@@ -273,6 +273,112 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
+class Client(db.Model):
+    __tablename__ = 'client'
+
+    client_id = db.Column(db.String(40), primary_key=True)
+    # human readable name
+    name = db.Column(db.String(40))
+    # human description
+    description = db.Column(db.String(400))
+    # creator of the client, resource user
+    user_id = db.Column(db.ForeignKey('users.id'))
+    # backref for user
+    user = db.relationship('User', backref=db.backref('client'))
+    # client secret
+    client_secret = db.Column(db.String(55), unique=True, index=True,
+                              nullable=False)
+
+    # public or cofidential
+    is_cofidential = db.Column(db.Boolean)
+
+    # redirect url
+    _redirect_urls = db.Column(db.Text)
+    _default_scopes = db.Column(db.Text)
+
+    @property
+    def client_type(self):
+        if self.is_cofidential:
+            return 'confidential'
+        return 'public'
+
+    @property
+    def redirect_url(self):
+        if self._redirect_urls:
+            return self._redirect_urls.split()
+        return []
+
+    @property
+    def default_redirect_url(self):
+        return self.redirct_url[0]
+
+    @property
+    def default_scopes(self):
+        if self._default_scopes:
+            return self._default_scopes.split()
+        return []
+
+class Grant(db.Model):
+    __tablename__ = 'grant'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.ForeignKey('users.id', ondelete='CASCADE'))
+    user = db.relationship('User', backref=db.backref('grant'))
+
+    client_id = db.Column(db.String(40),
+                          db.ForeignKey('client.client_id'), nullable=False)
+    client = db.relationship('Client', backref=db.backref('client'))
+
+    code = db.Column(db.String(255), index=True, nullable=False)
+    expires = db.Column(db.DateTime)
+
+    _scopes = db.Column(db.Text)
+
+
+    @property
+    def scopes(self):
+        if self._scopes:
+            return self._scopes.split()
+        return []
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+        return self
+
+
+class Token(db.Model):
+    __tablename__ = 'token'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.String(40),
+        db.ForeignKey('client.client_id'), nullable=False)
+
+    client = db.relationship('Client', backref=db.backref('token'))
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('User', backref=db.backref('token'))
+
+    # currently only bearer is supported
+    token_type = db.Column(db.String(40))
+
+    access_token = db.Column(db.String(255), unique=True)
+    refresh_token = db.Column(db.String(255), unique=True)
+    expires = db.Column(db.DateTime)
+    _scopes = db.Column(db.Text)
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+        return self
+
+    @property
+    def scopes(self):
+        if self._scopes:
+            return self._scopes.split()
+        return []
+
 
 class Post(db.Model):
     __tablename__ = 'posts'
@@ -366,12 +472,6 @@ class Comment(db.Model):
             tags=allowed_tags, strip=True))
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_body)
-
-# class Photo(db.Model):
-    # __tablename__ = 'photos'
-
-    # id = db.Column(db.Integer, primary_key=True)
-    # photo = db.Column(db.LargeBinary)
 
 
 class AnonymousUser(AnonymousUserMixin):
