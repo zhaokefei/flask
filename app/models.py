@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
 
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import current_app, request, url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from markdown import markdown
 import bleach
-from . import db, login_manager
+from . import db, login_manager, oauth
 from app.exceptions import ValidationError
 
 
@@ -75,6 +75,7 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
+    avatar_url = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
@@ -279,12 +280,6 @@ class Client(db.Model):
     client_id = db.Column(db.String(40), primary_key=True)
     # human readable name
     name = db.Column(db.String(40))
-    # human description
-    description = db.Column(db.String(400))
-    # creator of the client, resource user
-    user_id = db.Column(db.ForeignKey('users.id'))
-    # backref for user
-    user = db.relationship('User', backref=db.backref('client'))
     # client secret
     client_secret = db.Column(db.String(55), unique=True, index=True,
                               nullable=False)
@@ -327,7 +322,8 @@ class Grant(db.Model):
     user = db.relationship('User', backref=db.backref('grant'))
 
     client_id = db.Column(db.String(40),
-                          db.ForeignKey('client.client_id'), nullable=False)
+                          db.ForeignKey('client.client_id', ondelete='CASCADE'),
+                          nullable=False)
     client = db.relationship('Client', backref=db.backref('client'))
 
     code = db.Column(db.String(255), index=True, nullable=False)
@@ -378,6 +374,64 @@ class Token(db.Model):
         if self._scopes:
             return self._scopes.split()
         return []
+
+
+@oauth.clientgetter
+def load_client(client_id):
+    return Client.query.filter_by(client_id=client_id).first()
+
+@oauth.grantgetter
+def load_grant(client_id, code):
+    return Grant.query.filter_by(client_id=client_id, code=code).first()
+
+@oauth.grantsetter
+def save_grant(client_id, code, request, *args, **kwargs):
+    expires = datetime.utcnow() + timedelta(seconds=600)
+    grant = Grant(
+        client_id = client_id,
+        code = code['code'],
+        redirect_url = request.redirect_uri,
+        _scopes = ' '.join(request.scopes),
+        # user = request.user,
+        expires = expires
+    )
+    db.session.add(grant)
+    db.session.commit()
+    return grant
+
+@oauth.tokengetter
+def load_token(access_token=None, refresh_token=None):
+    if access_token:
+        return Token.query.filter_by(access_token=access_token).first()
+    elif refresh_token:
+        return Token.query.filter_by(refresh_token=refresh_token).first()
+
+@oauth.tokensetter
+def save_token(token, request, *args, **kwargs):
+    toks = Token.query.filter_by(client_id=request.client.client_id,
+                                  user_id=request.user.id)
+    for t in toks:
+        db.session.delete(t)
+
+    expires_in = token.get('expires_in')
+    expires = datetime.utcnow() + timedelta(seconds=expires_in)
+
+    tok = Token(
+        access_token = token['access_token'],
+        refresh_token = token['refresh_token'],
+        token_type = token['token_type'],
+        _scopes = token['scopes'],
+        expires = expires,
+        client_id = request.client.client_id,
+        user_id = request.user.id
+    )
+    db.session.add(tok)
+    db.session.commit()
+    return tok
+
+@oauth.usergetter
+def get_user(username, password, *args, **kwargs):
+    return User.query.filter_by(username=username).first()
 
 
 class Post(db.Model):

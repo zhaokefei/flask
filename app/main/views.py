@@ -1,13 +1,15 @@
 # -*- coding:utf-8 -*-
 
 # from werkzeug import secure_filename
+import os
 
 from flask import render_template, redirect, url_for, abort, flash, request, current_app, make_response
 from flask_login import login_required, current_user
 
 from . import main
-from .forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
-from .. import db
+from .forms import EditProfileForm, EditProfileAdminForm, PostForm, \
+    CommentForm, PhotoForm
+from .. import db, photos
 from ..models import User, Role, Permission, Post, Comment
 from ..decorators import admin_required, permission_required
 
@@ -131,7 +133,6 @@ def moderate_disable(id):
     return redirect(url_for('.moderate',
                             page=request.args.get('page', 1, type=int)))
 
-
 @main.route('/follow/<username>')
 @login_required
 @permission_required(Permission.FOLLOW)
@@ -231,3 +232,15 @@ def show_followed():
     resp = make_response(redirect(url_for('.index')))
     resp.set_cookie('show_followed', '1', max_age=30*24*60*60)
     return resp
+
+@main.route('/setting/avatar', methods=['GET', 'POST'])
+@login_required
+def setting_avatar():
+    form = PhotoForm()
+    if form.validate_on_submit():
+        filename = photos.save(form.photo.data, name='photo_%s.' % current_user.id)
+        file_url = photos.url(filename)
+        current_user.avatar_url = file_url
+        flash('Photo has been uploaded.')
+        return redirect(url_for('.user', username=current_user.username))
+    return render_template('upload.html', form=form)

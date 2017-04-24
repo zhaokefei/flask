@@ -1,30 +1,29 @@
 # -*- coding:utf-8 -*-
 
-from datetime import datetime, timedelta
 
 from flask import render_template, redirect, request, url_for, flash
 from flask_login import login_user,logout_user,  login_required, current_user
 from . import auth
 from .. import db, oauth
 from ..email import send_mail
-from ..models import User, Client, Grant, Token
+from ..models import User, Client
 from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
                    PasswordResetRequestForm, ResetPasswordForm, EmailChangeRequestForm
 
 
-@auth.before_app_request
-def before_request():
-    if current_user.is_authenticated:
-        current_user.ping()
-        if not current_user.confirmed \
-                and request.endpoint[:5] != 'auth.':
-            return redirect(url_for('auth.unconfirmed'))
+# @auth.before_app_request
+# def before_request():
+    # if current_user.is_authenticated:
+        # current_user.ping()
+        # if not current_user.confirmed \
+                # and request.endpoint[:5] != 'auth.':
+            # return redirect(url_for('auth.unconfirmed'))
 
-@auth.route('/unconfirmed')
-def unconfirmed():
-    if current_user.is_anonymous or current_user.confirmed:
-        return redirect(url_for('main.index'))
-    return render_template('auth/unconfirmed.html')
+# @auth.route('/unconfirmed')
+# def unconfirmed():
+    # if current_user.is_anonymous or current_user.confirmed:
+        # return redirect(url_for('main.index'))
+    # return render_template('auth/unconfirmed.html')
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -153,60 +152,8 @@ def email_change(token):
         flash('Invalid Request.')
     return redirect(url_for('main.index'))
 
-@oauth.clientgetter
-def load_client(client_id):
-    return Client.query.filter_by(client_id=client_id).first()
 
-@oauth.grantgetter
-def load_grant(client_id, code):
-    return Grant.query.filter_by(client_id=client_id, code=code).first()
-
-@oauth.grantsetter
-def save_grant(client_id, code, request, *args, **kwargs):
-    expires = datetime.utcnow() + timedelta(seconds=600)
-    grant = Grant(
-        client_id = client_id,
-        code = code['code'],
-        redirect_url = request.redirect_uri,
-        _scopes = ' '.join(request.scopes),
-        user = request.user,
-        expires = expires
-    )
-    db.session.add(grant)
-    db.session.commit()
-    return grant
-
-@oauth.tokengetter
-def load_token(access_token=None, refresh_token=None):
-    if access_token:
-        return Token.query.filter_by(access_token=access_token).first()
-    elif refresh_token:
-        return Token.query.filter_by(refresh_token=refresh_token).first()
-
-@oauth.tokensetter
-def save_token(token, request, *args, **kwargs):
-    toks = Token.query.filter_by(client_id=request.client.client_id,
-                                  user_id=request.user.id)
-    for t in toks:
-        db.session.delete(t)
-
-    expires_in = token.get('expires_in')
-    expires = datetime.utcnow() + timedelta(seconds=expires_in)
-
-    tok = Token(
-        access_token = token['access_token'],
-        refresh_token = token['refresh_token'],
-        token_type = token['token_type'],
-        _scopes = token['scopes'],
-        expires = expires,
-        client_id = request.client.client_id,
-        user_id = request.user.id
-    )
-    db.session.add(tok)
-    db.session.commit()
-    return tok
-
-@auth.route('/oauth/authorize', methods=['GET', 'POST'])
+@auth.route('/auth/authorize', methods=['GET', 'POST'])
 @login_required
 @oauth.authorize_handler
 def authorize(*args, **kwargs):
@@ -229,7 +176,7 @@ def access_token():
 def revoke_token():
     pass
 
-@auth.route('/client')
+@auth.route('/auth/client')
 @login_required
 def client():
     form = Client()
@@ -248,5 +195,4 @@ def client():
         db.session.commit()
         flash('client has been update.')
         return redirect(url_for('main.index'))
-    return render_template('auht/client.html')
-
+    return render_template('auth/client.html')

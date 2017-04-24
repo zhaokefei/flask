@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+import os
 from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail
@@ -8,7 +9,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_oauthlib.provider import OAuth2Provider
 from flask_pagedown import PageDown
-from config import config
+from config import config, basedir
+from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
 
 bootstrap = Bootstrap()
 mail = Mail()
@@ -20,16 +22,15 @@ login_manager.login_view = 'auth.login'
 pagedown = PageDown()
 oauth = OAuth2Provider()
 
-# class Images(object):
-    # images = UploadSet('images', IMAGES)
+photos = UploadSet('photos', IMAGES)
 
 def create_app(config_name):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
-    # app.config['UPLOADS_DEFAULT_DEST'] = '/home/kefei'
-    # configure_uploads(app, Images.images)
+    configure_uploads(app, photos)
+    patch_request_class(app) # 限制文件上传大小
 
     bootstrap.init_app(app)
     mail.init_app(app)
