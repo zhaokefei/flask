@@ -13,6 +13,8 @@ ul.posts {
     padding: 0px;
     margin: 16px 0px 0px 0px;
     border-top: 1px solid #e0e0e0;
+    overflow:hidden;
+    height: 300px;
 }
 div.post-tabs ul.posts {
     margin: 0px;
