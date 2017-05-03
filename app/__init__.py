@@ -19,7 +19,7 @@ login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'auth.login'
 pagedown = PageDown()
-oauth = OAuth2Provider()
+# oauth = OAuth2Provider()
 
 photos = UploadSet('photos', IMAGES)
 
@@ -37,7 +37,7 @@ def create_app(config_name):
     db.init_app(app)
     login_manager.init_app(app)
     pagedown.init_app(app)
-    oauth.init_app(app)
+    # oauth.init_app(app)
 
     if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
         from flask_sslify import SSLify

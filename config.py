@@ -3,7 +3,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
-    SSL_DISABLE = False
+    SSL_DISABLE = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     # mail
@@ -42,8 +42,7 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or \
-        'postgresql://kefei:5461@localhost/blog'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI')
 
     @classmethod
     def init_app(cls, app):
