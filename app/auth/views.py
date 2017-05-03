@@ -1,28 +1,29 @@
 # -*- coding:utf-8 -*-
 
+
 from flask import render_template, redirect, request, url_for, flash
 from flask_login import login_user,logout_user,  login_required, current_user
 from . import auth
-from .. import db
+from .. import db, oauth
 from ..email import send_mail
-from ..models import User
+from ..models import User, Client
 from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
                    PasswordResetRequestForm, ResetPasswordForm, EmailChangeRequestForm
 
 
-@auth.before_app_request
-def before_request():
-    if current_user.is_authenticated:
-        current_user.ping()
-        if not current_user.confirmed \
-                and request.endpoint[:5] != 'auth.':
-            return redirect(url_for('auth.unconfirmed'))
+# @auth.before_app_request
+# def before_request():
+    # if current_user.is_authenticated:
+        # current_user.ping()
+        # if not current_user.confirmed \
+                # and request.endpoint[:5] != 'auth.':
+            # return redirect(url_for('auth.unconfirmed'))
 
-@auth.route('/unconfirmed')
-def unconfirmed():
-    if current_user.is_anonymous or current_user.confirmed:
-        return redirect(url_for('main.index'))
-    return render_template('auth/unconfirmed.html')
+# @auth.route('/unconfirmed')
+# def unconfirmed():
+    # if current_user.is_anonymous or current_user.confirmed:
+        # return redirect(url_for('main.index'))
+    # return render_template('auth/unconfirmed.html')
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -152,3 +153,46 @@ def email_change(token):
     return redirect(url_for('main.index'))
 
 
+@auth.route('/auth/authorize', methods=['GET', 'POST'])
+@login_required
+@oauth.authorize_handler
+def authorize(*args, **kwargs):
+    if request.method == 'GET':
+        client_id = kwargs.get('client_id')
+        client = Client.query.filter_by(client_id=client_id).first()
+        kwargs['client'] = client
+        return render_template('oauthorize.html', **kwargs)
+
+    confirm = request.form.get('confirm', 'no')
+    return confirm == 'yes'
+
+@auth.route('/oauth/token')
+@oauth.token_handler
+def access_token():
+    return None
+
+@auth.route('/oauth/revoke', methods=['GET'])
+@oauth.revoke_handler
+def revoke_token():
+    pass
+
+@auth.route('/auth/client')
+@login_required
+def client():
+    form = Client()
+    if form.validate_on_submit():
+        item = Client(
+            name=form.name.data,
+            description=form.description.data,
+            user=current_user._get_current_object(),
+            client_id=form.client_id.data,
+            client_secret=form.client_secret.data,
+            is_confidential=form.is_confidential.data,
+            _redirect_urls=form._redirect_urls.data,
+            _default_scopes=form._default_scopes.data
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash('client has been update.')
+        return redirect(url_for('main.index'))
+    return render_template('auth/client.html')

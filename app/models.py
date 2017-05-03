@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
 
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import current_app, request, url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from markdown import markdown
 import bleach
-from . import db, login_manager
+from . import db, login_manager, oauth
 from app.exceptions import ValidationError
 
 
@@ -75,6 +75,7 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
+    avatar_url = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
@@ -101,7 +102,7 @@ class User(UserMixin, db.Model):
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
-        self.follow(self)
+        self.followed.append(Follow(followed=self))
 
     def to_json(self):
         json_user = {
@@ -272,6 +273,165 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+class Client(db.Model):
+    __tablename__ = 'client'
+
+    client_id = db.Column(db.String(40), primary_key=True)
+    # human readable name
+    name = db.Column(db.String(40))
+    # client secret
+    client_secret = db.Column(db.String(55), unique=True, index=True,
+                              nullable=False)
+
+    # public or cofidential
+    is_cofidential = db.Column(db.Boolean)
+
+    # redirect url
+    _redirect_urls = db.Column(db.Text)
+    _default_scopes = db.Column(db.Text)
+
+    @property
+    def client_type(self):
+        if self.is_cofidential:
+            return 'confidential'
+        return 'public'
+
+    @property
+    def redirect_url(self):
+        if self._redirect_urls:
+            return self._redirect_urls.split()
+        return []
+
+    @property
+    def default_redirect_url(self):
+        return self.redirct_url[0]
+
+    @property
+    def default_scopes(self):
+        if self._default_scopes:
+            return self._default_scopes.split()
+        return []
+
+class Grant(db.Model):
+    __tablename__ = 'grant'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.ForeignKey('users.id', ondelete='CASCADE'))
+    user = db.relationship('User', backref=db.backref('grant'))
+
+    client_id = db.Column(db.String(40),
+                          db.ForeignKey('client.client_id', ondelete='CASCADE'),
+                          nullable=False)
+    client = db.relationship('Client', backref=db.backref('client'))
+
+    code = db.Column(db.String(255), index=True, nullable=False)
+    expires = db.Column(db.DateTime)
+
+    _scopes = db.Column(db.Text)
+
+
+    @property
+    def scopes(self):
+        if self._scopes:
+            return self._scopes.split()
+        return []
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+        return self
+
+
+class Token(db.Model):
+    __tablename__ = 'token'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.String(40),
+        db.ForeignKey('client.client_id'), nullable=False)
+
+    client = db.relationship('Client', backref=db.backref('token'))
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('User', backref=db.backref('token'))
+
+    # currently only bearer is supported
+    token_type = db.Column(db.String(40))
+
+    access_token = db.Column(db.String(255), unique=True)
+    refresh_token = db.Column(db.String(255), unique=True)
+    expires = db.Column(db.DateTime)
+    _scopes = db.Column(db.Text)
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+        return self
+
+    @property
+    def scopes(self):
+        if self._scopes:
+            return self._scopes.split()
+        return []
+
+
+@oauth.clientgetter
+def load_client(client_id):
+    return Client.query.filter_by(client_id=client_id).first()
+
+@oauth.grantgetter
+def load_grant(client_id, code):
+    return Grant.query.filter_by(client_id=client_id, code=code).first()
+
+@oauth.grantsetter
+def save_grant(client_id, code, request, *args, **kwargs):
+    expires = datetime.utcnow() + timedelta(seconds=600)
+    grant = Grant(
+        client_id = client_id,
+        code = code['code'],
+        redirect_url = request.redirect_uri,
+        _scopes = ' '.join(request.scopes),
+        # user = request.user,
+        expires = expires
+    )
+    db.session.add(grant)
+    db.session.commit()
+    return grant
+
+@oauth.tokengetter
+def load_token(access_token=None, refresh_token=None):
+    if access_token:
+        return Token.query.filter_by(access_token=access_token).first()
+    elif refresh_token:
+        return Token.query.filter_by(refresh_token=refresh_token).first()
+
+@oauth.tokensetter
+def save_token(token, request, *args, **kwargs):
+    toks = Token.query.filter_by(client_id=request.client.client_id,
+                                  user_id=request.user.id)
+    for t in toks:
+        db.session.delete(t)
+
+    expires_in = token.get('expires_in')
+    expires = datetime.utcnow() + timedelta(seconds=expires_in)
+
+    tok = Token(
+        access_token = token['access_token'],
+        refresh_token = token['refresh_token'],
+        token_type = token['token_type'],
+        _scopes = token['scopes'],
+        expires = expires,
+        client_id = request.client.client_id,
+        user_id = request.user.id
+    )
+    db.session.add(tok)
+    db.session.commit()
+    return tok
+
+@oauth.usergetter
+def get_user(username, password, *args, **kwargs):
+    return User.query.filter_by(username=username).first()
 
 
 class Post(db.Model):
