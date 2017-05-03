@@ -14,7 +14,7 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     # send mail
     FLASKY_MAIL_SUBJECT_PREFIX = '[Hello]'
-    FLASKY_MAIL_SENDER = 'Flasky Admin <18292878089@163.com>'
+    FLASKY_MAIL_SENDER = 'Flasky Admin <no_heart_no_lung@163.com>'
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
     FLASKY_POSTS_PER_PAGE = 20
     FLASKY_FOLLOWERS_PER_PAGE = 50
@@ -31,8 +31,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI') or \
-        'postgresql://kefei:5461@localhost/dev_blog'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI')
 
 
 class TestingConfig(Config):
@@ -42,7 +41,8 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'postgresql://vfcshuyttwremn:6d7f693e224c5314ff40560ea365b3d0742106643b26459965c4013634f5b072@ec2-54-163-252-55.compute-1.amazonaws.com:5432/d85fmdcdjok34f'
 
     @classmethod
     def init_app(cls, app):
