@@ -7,7 +7,6 @@ from flask_mail import Mail
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_oauthlib.provider import OAuth2Provider
 from flask_pagedown import PageDown
 from config import config, basedir
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
